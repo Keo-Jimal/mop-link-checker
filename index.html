@@ -2,62 +2,146 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>MoP Discord Link Checker</title>
+  <title>MoP Discord Link Tools</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
+    :root {
+      color-scheme: dark;
+    }
     body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       margin: 0;
       padding: 1.5rem;
-      background: #0f172a;
+      background: radial-gradient(circle at top, #1e293b 0, #020617 45%, #000 100%);
       color: #e5e7eb;
+      display: flex;
+      justify-content: center;
+    }
+    .page {
+      max-width: 960px;
+      width: 100%;
     }
     h1 {
-      font-size: 1.6rem;
+      font-size: 1.8rem;
+      margin-bottom: 0.25rem;
+    }
+    h2 {
+      font-size: 1.2rem;
       margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    h2 span.emoji {
+      font-size: 1.2rem;
     }
     p {
       margin-top: 0.25rem;
       margin-bottom: 0.75rem;
+      color: #cbd5f5;
     }
     .card {
-      background: #020617;
-      border-radius: 0.75rem;
-      padding: 1rem 1.25rem;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-      max-width: 800px;
+      background: rgba(2, 6, 23, 0.93);
+      border-radius: 0.9rem;
+      padding: 1rem 1.25rem 1.25rem;
+      box-shadow: 0 18px 45px rgba(0, 0, 0, 0.7);
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      margin-bottom: 1rem;
+      backdrop-filter: blur(14px);
     }
-    textarea {
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .card-title {
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      font-size: 0.78rem;
+      color: #818cf8;
+    }
+    .badge-pill {
+      font-size: 0.7rem;
+      padding: 0.15rem 0.6rem;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      color: #cbd5f5;
+    }
+    textarea,
+    input,
+    select {
       width: 100%;
-      min-height: 80px;
       padding: 0.5rem 0.75rem;
       border-radius: 0.5rem;
       border: 1px solid #1f2937;
       background: #020617;
       color: #e5e7eb;
-      resize: vertical;
       font-family: monospace;
       box-sizing: border-box;
     }
-    textarea:focus {
+    textarea {
+      min-height: 80px;
+      resize: vertical;
+    }
+    textarea:focus,
+    input:focus,
+    select:focus {
       outline: 2px solid #38bdf8;
       outline-offset: 2px;
     }
-    button {
+    label {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: #cbd5f5;
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+    .hint {
+      font-size: 0.8rem;
+      color: #9ca3af;
+      margin-top: 0.25rem;
+    }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
       margin-top: 0.75rem;
-      padding: 0.5rem 1rem;
+    }
+    .col {
+      flex: 1 1 220px;
+    }
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+    button {
+      padding: 0.5rem 0.9rem;
       border-radius: 999px;
       border: none;
       background: #38bdf8;
       color: #020617;
       font-weight: 600;
       cursor: pointer;
+      font-size: 0.9rem;
     }
     button:hover {
       background: #0ea5e9;
     }
+    .btn-secondary {
+      background: #111827;
+      color: #e5e7eb;
+      border: 1px solid #4b5563;
+    }
+    .btn-secondary:hover {
+      background: #1f2937;
+    }
     .output {
-      margin-top: 1rem;
+      margin-top: 0.75rem;
       padding: 0.75rem 0.9rem;
       border-radius: 0.75rem;
       background: #020617;
@@ -73,50 +157,164 @@
       border-radius: 0.75rem;
       background: #022c22;
       border: 1px solid #16a34a;
-      font-size: 0.95rem;
+      font-size: 0.92rem;
+      white-space: pre-wrap;
     }
     .summary.error {
       background: #450a0a;
       border-color: #f87171;
     }
-    .label {
-      font-weight: 600;
-      color: #93c5fd;
+    .summary.warn {
+      background: #451a03;
+      border-color: #f97316;
     }
-    .hint {
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.1rem 0.45rem;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .tag-ok {
+      background: rgba(22, 163, 74, 0.1);
+      border: 1px solid rgba(22, 163, 74, 0.7);
+      color: #bbf7d0;
+    }
+    .tag-warn {
+      background: rgba(249, 115, 22, 0.1);
+      border: 1px solid rgba(249, 115, 22, 0.7);
+      color: #fed7aa;
+    }
+    .tag-error {
+      background: rgba(248, 113, 113, 0.1);
+      border: 1px solid rgba(248, 113, 113, 0.7);
+      color: #fecaca;
+    }
+    .small {
       font-size: 0.8rem;
       color: #9ca3af;
-      margin-top: 0.25rem;
+    }
+    .divider-label {
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      font-size: 0.7rem;
+      color: #6b7280;
+      margin: 1rem 0 0.5rem;
+    }
+    @media (max-width: 640px) {
+      body {
+        padding: 1rem;
+      }
+      h1 {
+        font-size: 1.5rem;
+      }
+      .card {
+        padding: 0.9rem 0.9rem 1rem;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h1>MoP Discord Link Checker</h1>
-    <p>Paste a <strong>Discord Activity link</strong> (or just the <code>custom_id</code>) below to decode it.</p>
+  <main class="page">
+    <header style="margin-bottom: 1rem;">
+      <h1>MoP Discord Link Tools</h1>
+      <p class="small">
+        Decode existing deep links and generate new ones for your Merchants of Play Discord Activity.
+      </p>
+    </header>
 
-    <textarea id="input" placeholder="Paste the full https://discord.com/activities/... link here"></textarea>
-    <div class="hint">
-      Works with links like:<br />
-      https://discord.com/activities/1349...?custom_id=eyJnYW1lU2x1ZyI6ImRvYnJvIiwidmlld0xpc3RpbmciOiJ0cnVlIiwidmVyc2lvbiI6IjEuMCIsInRpbWVzdGFtcCI6MTc2NTkxNTczODgxOH0%3D
-    </div>
+    <!-- Decoder Card -->
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Tool A · Decoder</div>
+          <h2><span class="emoji">🕵️‍♂️</span> Decode &amp; Validate Deep Links</h2>
+        </div>
+        <div class="badge-pill">Paste link → See slug, version, and status</div>
+      </div>
 
-    <button onclick="decodeLink()">Decode link</button>
+      <label for="input">Discord Activity link or <code>custom_id</code></label>
+      <textarea id="input" placeholder="Paste the full https://discord.com/activities/... link here"></textarea>
+      <div class="hint">
+        Works with links like:<br />
+        https://discord.com/activities/1349...?custom_id=eyJnYW1lU2x1ZyI6ImRvYnJvIiwidmlld0xpc3RpbmciOiJ0cnVlIiwidmVyc2lvbiI6IjEuMCIsInRpbWVzdGFtcCI6MTc2NTkxNTczODgxOH0%3D
+      </div>
 
-    <div id="summary" class="summary" style="display:none;"></div>
-    <div id="output" class="output" style="display:none;"></div>
-  </div>
+      <div class="button-row">
+        <button onclick="decodeLink()">Decode link</button>
+        <button class="btn-secondary" id="copySummaryBtn" onclick="copyDecodedSummary()" style="display:none;">Copy summary</button>
+        <button class="btn-secondary" id="copyJsonBtn" onclick="copyDecodedJson()" style="display:none;">Copy JSON</button>
+      </div>
+
+      <div id="summary" class="summary" style="display:none;"></div>
+      <div id="output" class="output" style="display:none;"></div>
+    </section>
+
+    <div class="divider-label">Link Generator</div>
+
+    <!-- Generator Card -->
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Tools B + C + D · Generator</div>
+          <h2><span class="emoji">🎯</span> Build a New Deep Link</h2>
+        </div>
+        <div class="badge-pill">Slug + version → Ready-to-share link</div>
+      </div>
+
+      <div class="row">
+        <div class="col">
+          <label for="genSlug">Game slug</label>
+          <input id="genSlug" type="text" placeholder="e.g. dobro" />
+          <div class="hint">Use the same slug as your MoP listing (e.g. <code>dobro</code>, <code>sheep-showdown</code>).</div>
+        </div>
+        <div class="col">
+          <label for="genVersion">Version</label>
+          <input id="genVersion" type="text" value="1.0" />
+          <div class="hint">Deep-link format version (currently <code>1.0</code> for your existing links).</div>
+        </div>
+      </div>
+
+      <div style="margin-top:0.75rem;">
+        <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.85rem;">
+          <input id="genViewListing" type="checkbox" checked style="width:auto;" />
+          <span>viewListing = <code>true</code> (link opens the Appstore listing, not instant-play)</span>
+        </label>
+      </div>
+
+      <div class="button-row">
+        <button onclick="generateLink()">Generate link</button>
+        <button class="btn-secondary" id="copyLinkBtn" onclick="copyGeneratedLink()" style="display:none;">Copy link</button>
+      </div>
+
+      <div id="genSummary" class="summary" style="display:none;"></div>
+      <div id="genOutput" class="output" style="display:none;"></div>
+    </section>
+  </main>
 
   <script>
+    // 👉 CONFIG: update this list with your real MoP game slugs
+    // Example: ["dobro", "sheep-showdown", "masters-of-maple-syrup"]
+    const knownGames = [
+      "dobro"
+    ];
+
+    // 👉 CONFIG: your Discord Activity ID for Merchants of Play
+    // This should match the numeric ID in your existing deep links.
+    const ACTIVITY_ID = "1349059817079046165";
+
+    let lastDecodedData = null;
+    let lastDecodedSummaryText = "";
+    let lastGeneratedLink = "";
+
     function safeDecodeCustomId(raw) {
       try {
-        // URL-decode first (%3D etc.)
         const urlDecoded = decodeURIComponent(raw.trim());
-
-        // Base64 decode
         const jsonString = atob(urlDecoded);
-
-        // Parse JSON
         return JSON.parse(jsonString);
       } catch (err) {
         throw new Error("Could not decode custom_id: " + err.message);
@@ -127,9 +325,15 @@
       const input = document.getElementById("input").value.trim();
       const summaryEl = document.getElementById("summary");
       const outputEl = document.getElementById("output");
+      const copySummaryBtn = document.getElementById("copySummaryBtn");
+      const copyJsonBtn = document.getElementById("copyJsonBtn");
 
       summaryEl.style.display = "none";
       outputEl.style.display = "none";
+      copySummaryBtn.style.display = "none";
+      copyJsonBtn.style.display = "none";
+      lastDecodedData = null;
+      lastDecodedSummaryText = "";
 
       if (!input) {
         summaryEl.textContent = "Please paste a link or custom_id first.";
@@ -141,63 +345,86 @@
       let customIdRaw = "";
 
       try {
-        // Try to treat input as a full URL first
         let url;
         if (input.startsWith("http://") || input.startsWith("https://")) {
           url = new URL(input);
         } else {
-          // If it doesn't look like a URL, attempt to prepend https:// just to parse
           url = new URL("https://dummy.domain/?" + input);
         }
-
         const customId = url.searchParams.get("custom_id");
         if (customId) {
           customIdRaw = customId;
         } else {
-          // If no custom_id param, assume the whole input is the raw custom_id
           customIdRaw = input;
         }
       } catch {
-        // If URL parsing fails entirely, assume the input is the raw custom_id
         customIdRaw = input;
       }
 
       try {
         const data = safeDecodeCustomId(customIdRaw);
+        lastDecodedData = data;
 
-        // Pretty-print JSON
         outputEl.textContent = JSON.stringify(data, null, 2);
         outputEl.style.display = "block";
 
-        // Build summary
-        let lines = [];
-        const slug = data.gameSlug || data.slug || "(not found)";
-        const version = data.version || "(not specified)";
-        const viewListing = data.viewListing || data.view || "(not specified)";
+        const slug = (data.gameSlug || data.slug || "").toString();
+        const version = (data.version || "(not specified)").toString();
+        const viewListing = (data.viewListing || data.view || "(not specified)").toString();
         const timestamp = data.timestamp;
 
-        lines.push("✅ Decoded successfully.");
+        const slugLower = slug.toLowerCase();
+        const isKnown = slug && knownGames.map(s => s.toLowerCase()).includes(slugLower);
+
+        let lines = [];
+        let plainLines = [];
+
+        // Status line
+        if (!slug) {
+          lines.push("<strong>Status:</strong> <span class=\"tag tag-error\">Missing game slug</span>");
+          plainLines.push("Status: Missing game slug");
+        } else if (isKnown) {
+          lines.push("<strong>Status:</strong> <span class=\"tag tag-ok\">Known MoP game</span>");
+          plainLines.push("Status: Known MoP game");
+        } else {
+          lines.push("<strong>Status:</strong> <span class=\"tag tag-warn\">Unknown slug (not in knownGames list)</span>");
+          plainLines.push("Status: Unknown slug (not in knownGames list)");
+        }
+
         lines.push("");
-        lines.push("• Game slug: " + slug);
-        lines.push("• Version: " + version);
-        lines.push("• viewListing: " + viewListing);
+        plainLines.push("");
+
+        lines.push("<strong>Game slug:</strong> " + (slug || "(not found)"));
+        lines.push("<strong>Version:</strong> " + version);
+        lines.push("<strong>viewListing:</strong> " + viewListing);
+        plainLines.push("Game slug: " + (slug || "(not found)"));
+        plainLines.push("Version: " + version);
+        plainLines.push("viewListing: " + viewListing);
 
         if (timestamp) {
+          let tsLine = "Timestamp: " + timestamp;
           try {
             const date = new Date(Number(timestamp));
             if (!isNaN(date.getTime())) {
-              lines.push("• Timestamp: " + timestamp + " (" + date.toISOString() + ")");
+              tsLine += " (" + date.toISOString() + ")";
             } else {
-              lines.push("• Timestamp: " + timestamp + " (could not parse to date)");
+              tsLine += " (could not parse to date)";
             }
           } catch {
-            lines.push("• Timestamp: " + timestamp);
+            // ignore
           }
+          lines.push("<strong>" + tsLine.split(":")[0] + ":</strong>" + tsLine.slice(tsLine.indexOf(":") + 1));
+          plainLines.push(tsLine);
         }
 
-        summaryEl.textContent = lines.join("\n");
-        summaryEl.className = "summary";
+        summaryEl.innerHTML = lines.join("<br>");
+        summaryEl.className = isKnown ? "summary" : slug ? "summary warn" : "summary error";
         summaryEl.style.display = "block";
+
+        lastDecodedSummaryText = plainLines.join("\n");
+
+        copySummaryBtn.style.display = "inline-flex";
+        copyJsonBtn.style.display = "inline-flex";
       } catch (err) {
         summaryEl.textContent =
           "❌ Error decoding link.\n\n" +
@@ -209,6 +436,85 @@
         summaryEl.style.display = "block";
       }
     }
-  </script>
-</body>
-</html>
+
+    async function copyToClipboard(text) {
+      if (!text) return;
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(text);
+          alert("Copied to clipboard.");
+        } else {
+          // Fallback
+          const temp = document.createElement("textarea");
+          temp.value = text;
+          document.body.appendChild(temp);
+          temp.select();
+          document.execCommand("copy");
+          document.body.removeChild(temp);
+          alert("Copied to clipboard.");
+        }
+      } catch (err) {
+        alert("Could not copy to clipboard: " + err.message);
+      }
+    }
+
+    function copyDecodedSummary() {
+      if (lastDecodedSummaryText) {
+        copyToClipboard(lastDecodedSummaryText);
+      }
+    }
+
+    function copyDecodedJson() {
+      if (lastDecodedData) {
+        const jsonText = JSON.stringify(lastDecodedData, null, 2);
+        copyToClipboard(jsonText);
+      }
+    }
+
+    function generateLink() {
+      const slugInput = document.getElementById("genSlug");
+      const versionInput = document.getElementById("genVersion");
+      const viewListingCheckbox = document.getElementById("genViewListing");
+      const summaryEl = document.getElementById("genSummary");
+      const outputEl = document.getElementById("genOutput");
+      const copyLinkBtn = document.getElementById("copyLinkBtn");
+
+      summaryEl.style.display = "none";
+      outputEl.style.display = "none";
+      copyLinkBtn.style.display = "none";
+      lastGeneratedLink = "";
+
+      const gameSlug = slugInput.value.trim();
+      const version = versionInput.value.trim() || "1.0";
+      const viewListing = viewListingCheckbox.checked ? "true" : "false";
+
+      if (!gameSlug) {
+        summaryEl.textContent = "Please enter a game slug.";
+        summaryEl.className = "summary error";
+        summaryEl.style.display = "block";
+        return;
+      }
+
+      const payload = {
+        gameSlug,
+        viewListing,
+        version,
+        timestamp: Date.now()
+      };
+
+      const json = JSON.stringify(payload);
+      const base64 = btoa(json);
+      const encoded = encodeURIComponent(base64);
+
+      const link = `https://discord.com/activities/${ACTIVITY_ID}?custom_id=${encoded}`;
+      lastGeneratedLink = link;
+
+      const isKnown = knownGames.map(s => s.toLowerCase()).includes(gameSlug.toLowerCase());
+
+      let lines = [];
+      if (isKnown) {
+        lines.push("<strong>Status:</strong> <span class=\"tag tag-ok\">Known MoP game</span>");
+      } else {
+        lines.push("<strong>Status:</strong> <span class=\"tag tag-warn\">Slug not in knownGames list</span>");
+      }
+      lines.push("")
