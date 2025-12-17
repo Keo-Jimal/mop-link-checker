@@ -263,14 +263,24 @@
           <div class="card-title">Tools B + C + D · Generator</div>
           <h2><span class="emoji">🎯</span> Build a New Deep Link</h2>
         </div>
-        <div class="badge-pill">Slug + version → Ready-to-share link</div>
+        <div class="badge-pill">Environment + game → Ready-to-share link</div>
       </div>
 
       <div class="row">
         <div class="col">
-          <label for="genSlug">Game slug</label>
-          <input id="genSlug" type="text" placeholder="e.g. dobro" />
-          <div class="hint">Use the same slug as your MoP listing (e.g. <code>dobro</code>, <code>sheep-showdown</code>).</div>
+          <label for="envSelect">Environment</label>
+          <select id="envSelect">
+            <option value="prod">Production</option>
+            <option value="staging">Staging</option>
+          </select>
+          <div class="hint">Choose which app this link should open (public vs internal staging).</div>
+        </div>
+        <div class="col">
+          <label for="genSlugSelect">Game slug</label>
+          <select id="genSlugSelect"></select>
+          <div class="hint">
+            Choose from configured MoP games (edit the <code>knownGames</code> list in the script to add more).
+          </div>
         </div>
         <div class="col">
           <label for="genVersion">Version</label>
@@ -298,18 +308,83 @@
 
   <script>
     // 👉 CONFIG: update this list with your real MoP game slugs
-    // Example: ["dobro", "sheep-showdown", "masters-of-maple-syrup"]
     const knownGames = [
-      "dobro"
+      "apex-carnivore",
+      "azure",
+      "backgammon",
+      "bebop",
+      "bombastic",
+      "cavern-shuffle-maze-of-the-minotaur",
+      "dobro",
+      "dominos",
+      "downstream",
+      "fable-fury",
+      "fatal-feast",
+      "gingham",
+      "go",
+      "grendel-the-game-of-chaos-and-mayhem",
+      "masters-of-maple-syrup",
+      "monster-trick",
+      "moytura",
+      "my-little-scythe",
+      "nonaga",
+      "overgrown",
+      "propuh",
+      "reforest",
+      "sky-bloom",
+      "sky-bloom-clusters",
+      "solitaire",
+      "stamp-swap",
+      "super-team",
+      "timber-town",
+      "tortilla-takedown",
+      "trailblazers"
     ];
 
-    // 👉 CONFIG: your Discord Activity ID for Merchants of Play
-    // This should match the numeric ID in your existing deep links.
-    const ACTIVITY_ID = "1349059817079046165";
+    // 👉 CONFIG: your Discord Activity IDs for Merchants of Play
+    // Fill these in with your real IDs.
+    const PROD_ACTIVITY_ID = "1349059817079046165"; // current public app ID
+    const STAGING_ACTIVITY_ID = "1317219866318606336"; // ask devs for this
 
     let lastDecodedData = null;
     let lastDecodedSummaryText = "";
     let lastGeneratedLink = "";
+
+    function getActivityIdForEnv() {
+      const select = document.getElementById("envSelect");
+      if (!select) return PROD_ACTIVITY_ID;
+      return select.value === "staging" ? STAGING_ACTIVITY_ID : PROD_ACTIVITY_ID;
+    }
+
+    function populateSlugDropdown() {
+      const select = document.getElementById("genSlugSelect");
+      if (!select) return;
+
+      select.innerHTML = "";
+
+      if (!knownGames || knownGames.length === 0) {
+        const opt = document.createElement("option");
+        opt.value = "";
+        opt.textContent = "No known games configured";
+        opt.disabled = true;
+        opt.selected = true;
+        select.appendChild(opt);
+        return;
+      }
+
+      const sorted = [...knownGames].sort((a, b) =>
+        a.localeCompare(b, undefined, { sensitivity: "base" })
+      );
+
+      sorted.forEach((slug) => {
+        const opt = document.createElement("option");
+        opt.value = slug;
+        opt.textContent = slug;
+        select.appendChild(opt);
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", populateSlugDropdown);
 
     function safeDecodeCustomId(raw) {
       try {
@@ -379,7 +454,6 @@
         let lines = [];
         let plainLines = [];
 
-        // Status line
         if (!slug) {
           lines.push("<strong>Status:</strong> <span class=\"tag tag-error\">Missing game slug</span>");
           plainLines.push("Status: Missing game slug");
@@ -444,7 +518,6 @@
           await navigator.clipboard.writeText(text);
           alert("Copied to clipboard.");
         } else {
-          // Fallback
           const temp = document.createElement("textarea");
           temp.value = text;
           document.body.appendChild(temp);
@@ -472,7 +545,7 @@
     }
 
     function generateLink() {
-      const slugInput = document.getElementById("genSlug");
+      const slugSelect = document.getElementById("genSlugSelect");
       const versionInput = document.getElementById("genVersion");
       const viewListingCheckbox = document.getElementById("genViewListing");
       const summaryEl = document.getElementById("genSummary");
@@ -484,12 +557,12 @@
       copyLinkBtn.style.display = "none";
       lastGeneratedLink = "";
 
-      const gameSlug = slugInput.value.trim();
+      const gameSlug = (slugSelect && slugSelect.value ? slugSelect.value : "").trim();
       const version = versionInput.value.trim() || "1.0";
       const viewListing = viewListingCheckbox.checked ? "true" : "false";
 
       if (!gameSlug) {
-        summaryEl.textContent = "Please enter a game slug.";
+        summaryEl.textContent = "Please choose a game slug from the dropdown.";
         summaryEl.className = "summary error";
         summaryEl.style.display = "block";
         return;
@@ -506,7 +579,11 @@
       const base64 = btoa(json);
       const encoded = encodeURIComponent(base64);
 
-      const link = `https://discord.com/activities/${ACTIVITY_ID}?custom_id=${encoded}`;
+      const activityId = typeof getActivityIdForEnv === "function"
+        ? getActivityIdForEnv()
+        : PROD_ACTIVITY_ID;
+
+      const link = `https://discord.com/activities/${activityId}?custom_id=${encoded}`;
       lastGeneratedLink = link;
 
       const isKnown = knownGames.map(s => s.toLowerCase()).includes(gameSlug.toLowerCase());
@@ -517,4 +594,27 @@
       } else {
         lines.push("<strong>Status:</strong> <span class=\"tag tag-warn\">Slug not in knownGames list</span>");
       }
-      lines.push("")
+      lines.push("");
+      lines.push("<strong>Game slug:</strong> " + gameSlug);
+      lines.push("<strong>Version:</strong> " + version);
+      lines.push("<strong>viewListing:</strong> " + viewListing);
+      lines.push("");
+      lines.push("<span class=\"small\">Share this link with publishers or teammates to jump straight to this listing in Discord.</span>");
+
+      summaryEl.innerHTML = lines.join("<br>");
+      summaryEl.className = isKnown ? "summary" : "summary warn";
+      summaryEl.style.display = "block";
+
+      outputEl.textContent = link;
+      outputEl.style.display = "block";
+      copyLinkBtn.style.display = "inline-flex";
+    }
+
+    function copyGeneratedLink() {
+      if (lastGeneratedLink) {
+        copyToClipboard(lastGeneratedLink);
+      }
+    }
+  </script>
+</body>
+</html>
