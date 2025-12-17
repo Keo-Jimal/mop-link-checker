@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>MoP Discord Link Checker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 1.5rem;
+      background: #0f172a;
+      color: #e5e7eb;
+    }
+    h1 {
+      font-size: 1.6rem;
+      margin-bottom: 0.5rem;
+    }
+    p {
+      margin-top: 0.25rem;
+      margin-bottom: 0.75rem;
+    }
+    .card {
+      background: #020617;
+      border-radius: 0.75rem;
+      padding: 1rem 1.25rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      max-width: 800px;
+    }
+    textarea {
+      width: 100%;
+      min-height: 80px;
+      padding: 0.5rem 0.75rem;
+      border-radius: 0.5rem;
+      border: 1px solid #1f2937;
+      background: #020617;
+      color: #e5e7eb;
+      resize: vertical;
+      font-family: monospace;
+      box-sizing: border-box;
+    }
+    textarea:focus {
+      outline: 2px solid #38bdf8;
+      outline-offset: 2px;
+    }
+    button {
+      margin-top: 0.75rem;
+      padding: 0.5rem 1rem;
+      border-radius: 999px;
+      border: none;
+      background: #38bdf8;
+      color: #020617;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0ea5e9;
+    }
+    .output {
+      margin-top: 1rem;
+      padding: 0.75rem 0.9rem;
+      border-radius: 0.75rem;
+      background: #020617;
+      border: 1px solid #1f2937;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: monospace;
+      font-size: 0.9rem;
+    }
+    .summary {
+      margin-top: 0.75rem;
+      padding: 0.75rem 0.9rem;
+      border-radius: 0.75rem;
+      background: #022c22;
+      border: 1px solid #16a34a;
+      font-size: 0.95rem;
+    }
+    .summary.error {
+      background: #450a0a;
+      border-color: #f87171;
+    }
+    .label {
+      font-weight: 600;
+      color: #93c5fd;
+    }
+    .hint {
+      font-size: 0.8rem;
+      color: #9ca3af;
+      margin-top: 0.25rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>MoP Discord Link Checker</h1>
+    <p>Paste a <strong>Discord Activity link</strong> (or just the <code>custom_id</code>) below to decode it.</p>
+
+    <textarea id="input" placeholder="Paste the full https://discord.com/activities/... link here"></textarea>
+    <div class="hint">
+      Works with links like:<br />
+      https://discord.com/activities/1349...?custom_id=eyJnYW1lU2x1ZyI6ImRvYnJvIiwidmlld0xpc3RpbmciOiJ0cnVlIiwidmVyc2lvbiI6IjEuMCIsInRpbWVzdGFtcCI6MTc2NTkxNTczODgxOH0%3D
+    </div>
+
+    <button onclick="decodeLink()">Decode link</button>
+
+    <div id="summary" class="summary" style="display:none;"></div>
+    <div id="output" class="output" style="display:none;"></div>
+  </div>
+
+  <script>
+    function safeDecodeCustomId(raw) {
+      try {
+        // URL-decode first (%3D etc.)
+        const urlDecoded = decodeURIComponent(raw.trim());
+
+        // Base64 decode
+        const jsonString = atob(urlDecoded);
+
+        // Parse JSON
+        return JSON.parse(jsonString);
+      } catch (err) {
+        throw new Error("Could not decode custom_id: " + err.message);
+      }
+    }
+
+    function decodeLink() {
+      const input = document.getElementById("input").value.trim();
+      const summaryEl = document.getElementById("summary");
+      const outputEl = document.getElementById("output");
+
+      summaryEl.style.display = "none";
+      outputEl.style.display = "none";
+
+      if (!input) {
+        summaryEl.textContent = "Please paste a link or custom_id first.";
+        summaryEl.className = "summary error";
+        summaryEl.style.display = "block";
+        return;
+      }
+
+      let customIdRaw = "";
+
+      try {
+        // Try to treat input as a full URL first
+        let url;
+        if (input.startsWith("http://") || input.startsWith("https://")) {
+          url = new URL(input);
+        } else {
+          // If it doesn't look like a URL, attempt to prepend https:// just to parse
+          url = new URL("https://dummy.domain/?" + input);
+        }
+
+        const customId = url.searchParams.get("custom_id");
+        if (customId) {
+          customIdRaw = customId;
+        } else {
+          // If no custom_id param, assume the whole input is the raw custom_id
+          customIdRaw = input;
+        }
+      } catch {
+        // If URL parsing fails entirely, assume the input is the raw custom_id
+        customIdRaw = input;
+      }
+
+      try {
+        const data = safeDecodeCustomId(customIdRaw);
+
+        // Pretty-print JSON
+        outputEl.textContent = JSON.stringify(data, null, 2);
+        outputEl.style.display = "block";
+
+        // Build summary
+        let lines = [];
+        const slug = data.gameSlug || data.slug || "(not found)";
+        const version = data.version || "(not specified)";
+        const viewListing = data.viewListing || data.view || "(not specified)";
+        const timestamp = data.timestamp;
+
+        lines.push("✅ Decoded successfully.");
+        lines.push("");
+        lines.push("• Game slug: " + slug);
+        lines.push("• Version: " + version);
+        lines.push("• viewListing: " + viewListing);
+
+        if (timestamp) {
+          try {
+            const date = new Date(Number(timestamp));
+            if (!isNaN(date.getTime())) {
+              lines.push("• Timestamp: " + timestamp + " (" + date.toISOString() + ")");
+            } else {
+              lines.push("• Timestamp: " + timestamp + " (could not parse to date)");
+            }
+          } catch {
+            lines.push("• Timestamp: " + timestamp);
+          }
+        }
+
+        summaryEl.textContent = lines.join("\n");
+        summaryEl.className = "summary";
+        summaryEl.style.display = "block";
+      } catch (err) {
+        summaryEl.textContent =
+          "❌ Error decoding link.\n\n" +
+          "Details: " + err.message + "\n\n" +
+          "Make sure you pasted either:\n" +
+          "• A full Discord Activity link that contains ?custom_id=...\n" +
+          "• Or just the custom_id value itself.";
+        summaryEl.className = "summary error";
+        summaryEl.style.display = "block";
+      }
+    }
+  </script>
+</body>
+</html>
