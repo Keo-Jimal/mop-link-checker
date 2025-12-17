@@ -279,7 +279,7 @@
           <label for="genSlugSelect">Game slug</label>
           <select id="genSlugSelect"></select>
           <div class="hint">
-            Choose from configured MoP games (edit the <code>knownGames</code> list in the script to add more).
+            List updates when you change environment. Edit the <code>prodGames</code> and <code>stagingGames</code> lists in the script to keep this accurate.
           </div>
         </div>
         <div class="col">
@@ -307,8 +307,13 @@
   </main>
 
   <script>
-    // 👉 CONFIG: update this list with your real MoP game slugs
-    const knownGames = [
+    // 👉 CONFIG: update these two lists with your real MoP game slugs.
+    // For now, all known games are in BOTH lists so everything works.
+    // Later, move slugs so that:
+    // - prodGames = games live in Production
+    // - stagingGames = games available in Staging (can include prod ones too)
+
+    const prodGames = [
       "apex-carnivore",
       "azure",
       "backgammon",
@@ -341,10 +346,51 @@
       "trailblazers"
     ];
 
+    const stagingGames = [
+      "apex-carnivore",
+      "azure",
+      "backgammon",
+      "bebop",
+      "bombastic",
+      "cavern-shuffle-maze-of-the-minotaur",
+      "dobro",
+      "dominos",
+      "downstream",
+      "fable-fury",
+      "fatal-feast",
+      "gingham",
+      "go",
+      "grendel-the-game-of-chaos-and-mayhem",
+      "masters-of-maple-syrup",
+      "monster-trick",
+      "moytura",
+      "my-little-scythe",
+      "nonaga",
+      "overgrown",
+      "propuh",
+      "reforest",
+      "sky-bloom",
+      "sky-bloom-clusters",
+      "solitaire",
+      "stamp-swap",
+      "super-team",
+      "timber-town",
+      "tortilla-takedown",
+      "trailblazers"
+    ];
+
+    // Helper: get combined set for decoder "known" check
+    function getAllKnownGames() {
+      const set = new Set();
+      prodGames.forEach(s => set.add(s.toLowerCase()));
+      stagingGames.forEach(s => set.add(s.toLowerCase()));
+      return set;
+    }
+    const allKnownSlugs = getAllKnownGames();
+
     // 👉 CONFIG: your Discord Activity IDs for Merchants of Play
-    // Fill these in with your real IDs.
     const PROD_ACTIVITY_ID = "1349059817079046165"; // current public app ID
-    const STAGING_ACTIVITY_ID = "1317219866318606336"; // ask devs for this
+    const STAGING_ACTIVITY_ID = "YOUR_STAGING_ACTIVITY_ID_HERE"; // ask devs for this
 
     let lastDecodedData = null;
     let lastDecodedSummaryText = "";
@@ -356,23 +402,31 @@
       return select.value === "staging" ? STAGING_ACTIVITY_ID : PROD_ACTIVITY_ID;
     }
 
+    function getGamesForCurrentEnv() {
+      const envSelect = document.getElementById("envSelect");
+      const env = envSelect ? envSelect.value : "prod";
+      return env === "staging" ? stagingGames : prodGames;
+    }
+
     function populateSlugDropdown() {
       const select = document.getElementById("genSlugSelect");
       if (!select) return;
 
+      const games = getGamesForCurrentEnv();
+
       select.innerHTML = "";
 
-      if (!knownGames || knownGames.length === 0) {
+      if (!games || games.length === 0) {
         const opt = document.createElement("option");
         opt.value = "";
-        opt.textContent = "No known games configured";
+        opt.textContent = "No games configured for this environment";
         opt.disabled = true;
         opt.selected = true;
         select.appendChild(opt);
         return;
       }
 
-      const sorted = [...knownGames].sort((a, b) =>
+      const sorted = [...games].sort((a, b) =>
         a.localeCompare(b, undefined, { sensitivity: "base" })
       );
 
@@ -384,7 +438,13 @@
       });
     }
 
-    document.addEventListener("DOMContentLoaded", populateSlugDropdown);
+    document.addEventListener("DOMContentLoaded", () => {
+      populateSlugDropdown();
+      const envSelect = document.getElementById("envSelect");
+      if (envSelect) {
+        envSelect.addEventListener("change", populateSlugDropdown);
+      }
+    });
 
     function safeDecodeCustomId(raw) {
       try {
@@ -449,7 +509,7 @@
         const timestamp = data.timestamp;
 
         const slugLower = slug.toLowerCase();
-        const isKnown = slug && knownGames.map(s => s.toLowerCase()).includes(slugLower);
+        const isKnown = slug && allKnownSlugs.has(slugLower);
 
         let lines = [];
         let plainLines = [];
@@ -461,8 +521,8 @@
           lines.push("<strong>Status:</strong> <span class=\"tag tag-ok\">Known MoP game</span>");
           plainLines.push("Status: Known MoP game");
         } else {
-          lines.push("<strong>Status:</strong> <span class=\"tag tag-warn\">Unknown slug (not in knownGames list)</span>");
-          plainLines.push("Status: Unknown slug (not in knownGames list)");
+          lines.push("<strong>Status:</strong> <span class=\"tag tag-warn\">Unknown slug (not in prod/staging lists)</span>");
+          plainLines.push("Status: Unknown slug (not in prod/staging lists)");
         }
 
         lines.push("");
@@ -579,20 +639,17 @@
       const base64 = btoa(json);
       const encoded = encodeURIComponent(base64);
 
-      const activityId = typeof getActivityIdForEnv === "function"
-        ? getActivityIdForEnv()
-        : PROD_ACTIVITY_ID;
-
+      const activityId = getActivityIdForEnv();
       const link = `https://discord.com/activities/${activityId}?custom_id=${encoded}`;
       lastGeneratedLink = link;
 
-      const isKnown = knownGames.map(s => s.toLowerCase()).includes(gameSlug.toLowerCase());
+      const isKnown = allKnownSlugs.has(gameSlug.toLowerCase());
 
       let lines = [];
       if (isKnown) {
         lines.push("<strong>Status:</strong> <span class=\"tag tag-ok\">Known MoP game</span>");
       } else {
-        lines.push("<strong>Status:</strong> <span class=\"tag tag-warn\">Slug not in knownGames list</span>");
+        lines.push("<strong>Status:</strong> <span class=\"tag tag-warn\">Slug not in prod/staging lists</span>");
       }
       lines.push("");
       lines.push("<strong>Game slug:</strong> " + gameSlug);
